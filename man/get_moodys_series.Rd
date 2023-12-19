@@ -5,21 +5,21 @@
 \title{Get Moody's Data Buffet Series}
 \usage{
 get_moodys_series(
-  mnemonics,
   accKey = Sys.getenv("MOODYS_ACC_KEY"),
   encKey = Sys.getenv("MOODYS_ENC_KEY"),
+  mnemonics,
   freq = "0",
   trans = "0",
   vintage = NULL
 )
 }
 \arguments{
-\item{mnemonics}{Either a single mnemonic or list of mnemonics (less than 25)
-to pass to the Moody's API}
-
 \item{accKey}{Access Key for Moody's API (defaults to environment variable)}
 
 \item{encKey}{Encryption Key for Moody's API (defaults to environment variable)}
+
+\item{mnemonics}{Either a single mnemonic or list of mnemonics (less than 25)
+to pass to the Moody's API}
 
 \item{freq}{Frequency conversion (for list of codes use
 get_moodys_codes(frequencies), or see the API user guide)}

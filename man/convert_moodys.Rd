@@ -4,7 +4,7 @@
 \alias{convert_moodys}
 \title{Convert Moody's Data Buffet series query to an object}
 \usage{
-convert_moodys(series)
+convert_moodys(resp)
 }
 \arguments{
 \item{series}{Object from get_moodys_series()}

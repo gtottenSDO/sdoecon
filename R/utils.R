@@ -12,3 +12,11 @@
 #' @param rhs A function call using the magrittr semantics.
 #' @return The result of calling `rhs(lhs)`.
 NULL
+
+#' Create a temporary environment
+#'
+#' @return An environment
+#' @export
+#'
+#' @keywords internal
+temporary_env <- new.env(parent = emptyenv())

@@ -20,6 +20,8 @@
 #' @param trans Transformation code (for list of codes see API user guide)
 #' @param vintage Get list of available vintages using
 #' get_moodys_vintages(mnemonic)
+#' @import httr2
+#' @importFrom magrittr %>%
 #'
 #' @return returns list from json. Use function convert_moodys to create
 #' a data frame
@@ -30,51 +32,76 @@
 #' vintage = "202309") %>%
 #'  convert_moodys(type = "xts")
 
-get_moodys_series <- function(mnemonics,
-                              accKey = Sys.getenv("MOODYS_ACC_KEY"),
+
+
+
+get_moodys_series <- function(accKey = Sys.getenv("MOODYS_ACC_KEY"),
                               encKey = Sys.getenv("MOODYS_ENC_KEY"),
+                              mnemonics,
                               freq = "0",
                               trans = "0",
                               vintage = NULL) {
 
-  if (length(mnemonics) > 25){
-    stop("Too many mnemonics. Please limit to 25.")
+
+
+  if (length(mnemonics) > 25) {
+    # check for token in the environment
+
+
+    # break the mnemonics into groups of 25
+    m_chunks <- split(mnemonics, ceiling(seq_along(mnemonics) / 25))
   }
 
-  apiCommand <- paste0(
-    #ifelse(length(mnemonics) > 1,
-    "multi-", #""),
-    "series?m=",
-    utils::URLencode(paste0(mnemonics, collapse = ";"), reserved = TRUE),
-    "&freq=", freq,
-    "&trans=", trans,
-    ifelse(is.null(vintage), "", paste0("&vintage=", vintage))
-  )
+  create_req <- function(mnemonics,
+                         freq = NULL,
+                         trans = NULL,
+                         vintage,
+                         ...) {
+    # check for token in the environment
+    check_moodys_token()
 
-  url <- paste0(
-    "https://api.economy.com/data/v1/",
-    apiCommand
-  )
+    params <- list(
+      m = paste0(mnemonics, collapse = ";"),
+      freq = freq,
+      trans = trans,
+      vintage = vintage,
+      ...
+    )
 
-  timeStamp <- format(as.POSIXct(Sys.time()), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
-  hashMsg <- paste(accKey, timeStamp, sep = "")
-  signature <- digest::hmac(encKey, hashMsg, "sha256")
+    headers <- list(Accept = "application/json",
+                    Authorization = paste0("Bearer ", temporary_env$token))
 
-  Sys.sleep(1)
-  req <- httr::GET(url, httr::add_headers(
-    "AccessKeyId" = accKey,
-    "Signature" = signature,
-    "TimeStamp" = timeStamp
-  ))
-  #### Are You Behind A Proxy? If so, try:
-  #   Add the use_proxy argument to httr::GET
-  #   req <- httr::GET(url, httr::add_headers("AccessKeyId" = accKey,
-  #                                           "Signature" = signature,
-  #                                           "TimeStamp" = timeStamp),
-  #                  use_proxy("http:://myproxy",80))
+    req <- request("https://api.economy.com/data/v1/multi-series/") |>
+      req_headers(!!!headers) |>
+      req_url_query(!!!params)
 
-  series <- jsonlite::fromJSON(httr::content(req, as = "text"))
-  return(series)
+    return(req)
+  }
+
+  if(length(mnemonics) > 25) {
+
+    req_lst <- m_chunks |>
+      map(~create_req(mnemonics = .x,
+                      freq,
+                      trans,
+                      vintage))
+
+    response <- req_lst |>
+      req_perform_sequential(progress = TRUE)
+
+
+  } else {
+    req <- create_req(head(mnemonics,25),
+                      freq,
+                      trans,
+                      vintage)
+
+    response <- req_perform(req)
+
+  }
+
+
+  return(response)
 }
 
 
@@ -91,14 +118,30 @@ get_moodys_series <- function(mnemonics,
 #' vintage = "202309") %>%
 #'  convert_moodys(type = "xts")
 
-convert_moodys <- function(series) {
+convert_moodys <- function(resp) {
+  process_response <- function(response) {
+    response |>
+      httr2::resp_body_json() |>
+      purrr::pluck("data") |>
+      tibble::tibble() |>
+      rlang::set_names("response") |>
+      tidyr::unnest_wider("response") |>
+      tidyr::unnest_longer("data") |>
+      tidyr::unnest_wider("data")
+  }
 
+  if(is.list(resp)) {
+    out <- resp |>
+      httr2::resps_successes() |>
+      httr2::resps_data(\(resp) process_response(resp))
+  } else {
+    out <- process_response(resp)
+  }
 
-    out <- series %>%
-      purrr::pluck("data") %>%
-      tidyr::unnest(cols = c(data))
-
-    return(out)
+  return(out)
 
 }
+
+
+
 
