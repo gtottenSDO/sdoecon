@@ -5,19 +5,15 @@
 \title{Get Moody's Data Buffet Series}
 \usage{
 get_moodys_series(
-  accKey = Sys.getenv("MOODYS_ACC_KEY"),
-  encKey = Sys.getenv("MOODYS_ENC_KEY"),
   mnemonics,
   freq = "0",
   trans = "0",
-  vintage = NULL
+  vintage = NULL,
+  accKey = Sys.getenv("MOODYS_ACC_KEY"),
+  encKey = Sys.getenv("MOODYS_ENC_KEY")
 )
 }
 \arguments{
-\item{accKey}{Access Key for Moody's API (defaults to environment variable)}
-
-\item{encKey}{Encryption Key for Moody's API (defaults to environment variable)}
-
 \item{mnemonics}{Either a single mnemonic or list of mnemonics (less than 25)
 to pass to the Moody's API}
 
@@ -28,6 +24,10 @@ get_moodys_codes(frequencies), or see the API user guide)}
 
 \item{vintage}{Get list of available vintages using
 get_moodys_vintages(mnemonic)}
+
+\item{accKey}{Access Key for Moody's API (defaults to environment variable)}
+
+\item{encKey}{Encryption Key for Moody's API (defaults to environment variable)}
 }
 \value{
 returns list from json. Use function convert_moodys to create

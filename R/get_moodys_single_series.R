@@ -35,12 +35,12 @@
 
 
 
-get_moodys_series <- function(accKey = Sys.getenv("MOODYS_ACC_KEY"),
-                              encKey = Sys.getenv("MOODYS_ENC_KEY"),
-                              mnemonics,
+get_moodys_series <- function(mnemonics,
                               freq = "0",
                               trans = "0",
-                              vintage = NULL) {
+                              vintage = NULL,
+                              accKey = Sys.getenv("MOODYS_ACC_KEY"),
+                              encKey = Sys.getenv("MOODYS_ENC_KEY")) {
 
 
 
@@ -130,12 +130,13 @@ convert_moodys <- function(resp) {
       tidyr::unnest_wider("data")
   }
 
-  if(is.list(resp)) {
+  if(all(length(attributes(resp)) >0,
+            attributes(resp)$class == "httr2_response")) {
+    out <- process_response(resp)
+  } else {
     out <- resp |>
       httr2::resps_successes() |>
       httr2::resps_data(\(resp) process_response(resp))
-  } else {
-    out <- process_response(resp)
   }
 
   return(out)

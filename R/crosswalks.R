@@ -51,3 +51,17 @@
 #' @source Colorado State Demography Office Crosswalk
 "gcode_n2_crosswalk"
 
+#' Region Crosswalk
+#'
+#' A crosswalk file containing the counties in Colorado for mapping them to regions
+#'
+#' @format A data frame with 159 rows and 4 variables:
+#' \describe{
+#' \item{region_name}{Region Name}
+#' \item{region_code}{Region Code}
+#' \item{county_fips}{County FIPS code}
+#' \item{county_name}{County name}
+#' }
+#'
+#' @source Colorado State Demography Office Crosswalk
+"region_xwalk"
