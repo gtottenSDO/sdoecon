@@ -86,8 +86,6 @@ search_moodys_series <- function(
 
   return(response)
 }
-moodys_search <- search_moodys_series("employment", rows = 500) |>
-  convert_moodys_search()
 
 #' Convert Moody's Search Results to Data Frame
 #'
