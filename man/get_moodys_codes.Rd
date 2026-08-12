@@ -2,24 +2,31 @@
 % Please edit documentation in R/moodys_api_helpers.R
 \name{get_moodys_codes}
 \alias{get_moodys_codes}
-\title{Table of API Codes}
+\title{Table of Moody's API codes}
 \usage{
 get_moodys_codes(
   codetype = c("filetypes", "frequencies"),
-  accKey = Sys.getenv("MOODYS_ACC_KEY"),
-  encKey = Sys.getenv("MOODYS_ENC_KEY")
+  accKey = moodys_key("acc"),
+  encKey = moodys_key("enc")
 )
 }
 \arguments{
-\item{codetype}{Either "filetypes" or "frequencies" (filetypes are only for baskets)}
+\item{codetype}{Either \code{"filetypes"} (basket file types) or
+\code{"frequencies"} (frequency conversion codes).}
 
-\item{accKey}{Access Key for Moody's API (defaults to environment variable)}
+\item{accKey}{Moody's API access key. Defaults to the stored key, see
+\code{\link[=moodys_key]{moodys_key()}}.}
 
-\item{encKey}{Encryption Key for Moody's API (defaults to environment variable)}
+\item{encKey}{Moody's API encryption key. Defaults to the stored key.}
 }
 \value{
-Data frame of available codes
+A data frame of available codes.
 }
 \description{
-Table of API Codes
+Table of Moody's API codes
+}
+\examples{
+\dontrun{
+get_moodys_codes("frequencies")
+}
 }

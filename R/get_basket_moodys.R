@@ -1,70 +1,101 @@
 #' Get Moody's basket data
+#'
 #' @description
-#' Function to get Moody's data for a specific basket.
-#' Data is converted to long format and statewide and Denver Boulder MSA are aggregated.
+#' Runs a named Moody's basket, waits for it to finish processing, and returns
+#' the resulting CSV. Use [process_moodys()] to reshape the result to long
+#' format with geography labels.
 #'
-#' Function based on Moody's API documentation:
-#' https://www.economy.com/support/apis/getting-started
+#' Based on the Moody's API documentation:
+#' <https://www.economy.com/support/apis/getting-started>
 #'
-#' @param BASKET_NAME Name of basket to download
-#' @param accKey Moody's API acccess key (defaults to environment variable if installed using set_moodys_api_key)
-#' @param encKey Moody's API encryption key (defaults to environment variable if installed using set_moodys_api_key)
-#' @importFrom jsonlite fromJSON
-#' @importFrom tidyr pivot_longer
-#' @import dplyr
-#' @import stringr
+#' @param BASKET_NAME Name of the basket to run.
+#' @param accKey Moody's API access key. Defaults to the stored key, see
+#'   [moodys_key()].
+#' @param encKey Moody's API encryption key. Defaults to the stored key.
+#' @param max_wait Maximum seconds to wait for the basket to finish processing
+#'   before erroring. Baskets are run server-side and can take minutes.
+#' @param poll_interval Seconds between status checks.
 #'
-#' @return Data frame with long format data
+#' @return A tibble of the basket contents, one row per series.
 #' @export
 #'
 #' @examples
-#' moodys_colorado_forecast <- basket_call(BASKET_NAME = "colorado_sector_emp")
+#' \dontrun{
+#' moodys_colorado_forecast <- get_moodys_basket("colorado_sector_emp")
+#' }
+get_moodys_basket <- function(
+  BASKET_NAME,
+  accKey = moodys_key("acc"),
+  encKey = moodys_key("enc"),
+  max_wait = 600,
+  poll_interval = 10
+) {
+  # Find the basket by name and keep its ID.
+  baskets <- call_api_moodys("baskets/", accKey, encKey) |>
+    .moodys_json()
+  basketID <- baskets$basketId[baskets$name == BASKET_NAME]
 
-get_moodys_basket <- function(BASKET_NAME, accKey = Sys.getenv("MOODYS_ACC_KEY"), encKey = Sys.getenv("MOODYS_ENC_KEY")){
-
-  #####
-  # Setup:
-  # 1. Store your access key, encryption key, and basket name.
-  # Get your keys at:
-  # https://www.economy.com/myeconomy/api-key-info
-
-
-  #####
-  # Identify a basket to execute:
-  # 2. Get list of baskets.
-  # 3. Extract the basket with a given name, and save its ID for later.
-  baskets.json <- call_api_moodys("baskets/", accKey, encKey, type = "GET")
-  baskets      <- fromJSON(httr::content(baskets.json, as = "text"))
-  basketID     <- baskets$basketId[baskets$name == BASKET_NAME]
-
-  # 4. Execute a particular basket using its ID.
-  # This requires that the optional argument “type” be set to "POST".
-  call    <- paste("orders?type=baskets&action=run&id=", basketID, sep = "")
-  order   <- call_api_moodys(call, accKey, encKey, type = "POST")
-  orderID <- fromJSON(httr::content(order, as = "text"))$orderId
-
-  #####
-  # Download the output:
-  # 5. Periodically check if the order has completed.
-  call <- paste("orders/", orderID, sep = "")
-  processing.check <- TRUE
-  while(processing.check) {
-    status <- call_api_moodys(call, accKey, encKey, type = "GET")
-    processing.check <- fromJSON(httr::content(status, as = "text"))$processing
-    Sys.sleep(10)
+  if (length(basketID) == 0) {
+    stop(
+      "No Moody's basket named '",
+      BASKET_NAME,
+      "'. Available baskets: ",
+      paste(baskets$name, collapse = ", "),
+      call. = FALSE
+    )
   }
-  rm(status)
 
-  # 6. Download completed output.
-  call    <- paste("orders?type=baskets&id=", basketID, sep = "")
-  request <- call_api_moodys(call, accKey, encKey, type = "GET")
+  # Running a basket requires a POST.
+  order <- call_api_moodys(
+    paste0("orders?type=baskets&action=run&id=", basketID),
+    accKey,
+    encKey,
+    type = "POST"
+  ) |>
+    .moodys_json()
+  orderID <- order$orderId
 
-  # 7. This works for CSV baskets:
-  cat(httr::content(request, as = "text", type = "text/html", encoding = "UTF-8"),
-      file = "basket.data", sep = "\n")
+  # Poll until the order finishes. Bounded, so a stuck order cannot hang the
+  # session indefinitely.
+  deadline <- Sys.time() + max_wait
+  repeat {
+    status <- call_api_moodys(paste0("orders/", orderID), accKey, encKey) |>
+      .moodys_json()
 
-  df <- read_csv("basket.data")
-return(df)
+    if (!isTRUE(status$processing)) {
+      break
+    }
+
+    if (Sys.time() > deadline) {
+      stop(
+        "Moody's basket '",
+        BASKET_NAME,
+        "' was still processing after ",
+        max_wait,
+        " seconds (order ",
+        orderID,
+        "). Increase `max_wait` or check the order in Data Buffet.",
+        call. = FALSE
+      )
+    }
+
+    Sys.sleep(poll_interval)
+  }
+
+  # Download the completed output and parse it straight from the response
+  # body. Nothing is written to disk; earlier versions wrote a `basket.data`
+  # file into the working directory.
+  body <- call_api_moodys(
+    paste0("orders?type=baskets&id=", basketID),
+    accKey,
+    encKey
+  ) |>
+    httr2::resp_body_string()
+
+  # The API returns CRLF-terminated lines. Writing those through a text-mode
+  # connection on Windows produced "\r\r\n", which readr does not merely
+  # mis-parse -- it crashes the R session. Normalise before parsing.
+  body <- gsub("\r\n?", "\n", body)
+
+  readr::read_csv(I(body), show_col_types = FALSE)
 }
-
-

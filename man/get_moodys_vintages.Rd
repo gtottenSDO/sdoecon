@@ -2,24 +2,30 @@
 % Please edit documentation in R/moodys_api_helpers.R
 \name{get_moodys_vintages}
 \alias{get_moodys_vintages}
-\title{Lookup Available Vintages for a Moodys Mnemonic}
+\title{Look up available vintages for a Moody's mnemonic}
 \usage{
 get_moodys_vintages(
   mnemonic,
-  accKey = Sys.getenv("MOODYS_ACC_KEY"),
-  encKey = Sys.getenv("MOODYS_ENC_KEY")
+  accKey = moodys_key("acc"),
+  encKey = moodys_key("enc")
 )
 }
 \arguments{
-\item{mnemonic}{Mnemonic to lookup}
+\item{mnemonic}{Mnemonic to look up.}
 
-\item{accKey}{Access Key for Moody's API (defaults to environment variable)}
+\item{accKey}{Moody's API access key. Defaults to the stored key, see
+\code{\link[=moodys_key]{moodys_key()}}.}
 
-\item{encKey}{Encryption Key for Moody's API (defaults to environment variable)}
+\item{encKey}{Moody's API encryption key. Defaults to the stored key.}
 }
 \value{
-Data frame of available vintages
+A data frame of available vintages.
 }
 \description{
-Lookup Available Vintages for a Moodys Mnemonic
+Look up available vintages for a Moody's mnemonic
+}
+\examples{
+\dontrun{
+get_moodys_vintages("fet.iusa")
+}
 }

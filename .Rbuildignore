@@ -1,2 +1,8 @@
 ^sdoecon\.Rproj$
 ^\.Rproj\.user$
+^basket\.data$
+^LICENSE\.md$
+^README\.Rmd$
+^\.github$
+^NOTES-agent\.md$
+^\.claude$

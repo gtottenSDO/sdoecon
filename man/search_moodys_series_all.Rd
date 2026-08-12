@@ -2,34 +2,41 @@
 % Please edit documentation in R/search_moodys_series.R
 \name{search_moodys_series_all}
 \alias{search_moodys_series_all}
-\title{Search Moody's Series with Pagination Helper}
+\title{Search Moody's series across all result pages}
 \usage{
 search_moodys_series_all(
   query,
   max_results = 500,
   rows_per_page = 100,
   sort = NULL,
-  accKey = Sys.getenv("MOODYS_ACC_KEY"),
-  encKey = Sys.getenv("MOODYS_ENC_KEY")
+  accKey = moodys_key("acc"),
+  encKey = moodys_key("enc")
 )
 }
 \arguments{
-\item{query}{Search query string}
+\item{query}{Search query string.}
 
-\item{max_results}{Maximum number of results to retrieve (default: 500)}
+\item{max_results}{Maximum number of results to retrieve.}
 
-\item{rows_per_page}{Number of rows per API call (default: 100)}
+\item{rows_per_page}{Number of rows per API call.}
 
-\item{sort}{Sort criteria}
+\item{sort}{Sort criteria. Leave \code{NULL} to sort by relevance score.}
 
-\item{accKey}{Access Key for Moody's API}
+\item{accKey}{Moody's API access key. Defaults to the stored key, see
+\code{\link[=moodys_key]{moodys_key()}}.}
 
-\item{encKey}{Encryption Key for Moody's API}
+\item{encKey}{Moody's API encryption key. Defaults to the stored key.}
 }
 \value{
-Data frame with all search results
+A tibble of all retrieved search results, carrying the same
+attributes as \code{\link[=convert_moodys_search]{convert_moodys_search()}}.
 }
 \description{
-This function automatically handles pagination to retrieve all results
-for a search query. Use with caution for queries with many results.
+Repeatedly calls \code{\link[=search_moodys_series]{search_moodys_series()}} to retrieve up to \code{max_results}
+matches. Use with care for broad queries.
+}
+\examples{
+\dontrun{
+search_moodys_series_all("colorado employment", max_results = 200)
+}
 }

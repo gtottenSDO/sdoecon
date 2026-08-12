@@ -1,24 +1,44 @@
 Package: sdoecon
-Title: Package for loading SDO jobs data
-Version: 0.0.0.9000
-Authors@R: 
+Title: Colorado State Demography Office Economic Data Tools
+Version: 0.1.0
+Authors@R:
     person("Greg", "Totten", , "greg.totten@state.co.us", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+Description: Tools used by the Colorado State Demography Office to assemble
+    economic and jobs data. Provides wrappers for the Moody's Analytics Data
+    Buffet API, a downloader for the Bureau of Labor Statistics Quarterly
+    Census of Employment and Wages (QCEW), and accessors for the office's
+    economic crosswalks. Crosswalks are served from the SDO Postgres database
+    via the 'sdotools' package rather than bundled with this package.
+License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
-Imports: 
+Imports:
+    assertthat,
     digest,
     dplyr,
-    httr,
-    httr2,
+    httr2 (>= 1.1.0),
     jsonlite,
-    magrittr,
+    keyring,
+    purrr,
+    readr (>= 2.0.0),
+    rlang,
+    sdotools,
+    stringr,
+    tibble,
+    tidyr,
+    utils,
     vroom
-Depends: 
-    R (>= 2.10)
+Suggests:
+    curl,
+    DBI,
+    testthat (>= 3.0.0),
+    withr
+Remotes:
+    ColoradoDemography/sdotools
+Depends:
+    R (>= 4.1)
 LazyData: true
+Config/testthat/edition: 3
 URL: https://github.com/gtottenSDO/sdoecon
 BugReports: https://github.com/gtottenSDO/sdoecon/issues
+Config/roxygen2/version: 8.1.0

@@ -1,0 +1,3 @@
+# Test fixtures are byte-sensitive: the Moody's basket sample exists to pin
+# line-ending handling, so git must not normalise it on checkout.
+tests/testthat/fixtures/** -text

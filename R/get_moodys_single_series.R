@@ -1,123 +1,81 @@
-#' Get Moody's Data Buffet Series
+#' Get Moody's Data Buffet series
 #'
-#' This function retrieves Moody's Data Buffet Series using Mnemonic Code
-#' (or set of up to 25 Mnemonic Codes). Access and Encryption Keys can be stored
-#' using set_moodys_api_key(), or passed through to the function directly.
-#' Frequency, Transformation Code, and Vintage arguments are optional. Use
-#' convert_moodys() to create an xts or data frame object.
+#' @description
+#' Retrieves Moody's Data Buffet series by mnemonic. Requests are automatically
+#' split into chunks of 25, the API's per-call limit. Use [convert_moodys()] to
+#' turn the result into a data frame.
 #'
-#' API documentation can be found at https://www.economy.com/products/tools/api#db
+#' Access and encryption keys can be stored with [set_moodys_api_key()] or
+#' passed directly.
 #'
-#' Script based off of Moody's sample code available at:
-#' https://github.com/moodysanalytics/databuffet-api-codesamples/blob/master/R/Single-Series.R
+#' API documentation: <https://www.economy.com/products/tools/api#db>
 #'
-#' @param mnemonics Either a single mnemonic or list of mnemonics (less than 25)
-#' to pass to the Moody's API
-#' @param accKey Access Key for Moody's API (defaults to environment variable)
-#' @param encKey Encryption Key for Moody's API (defaults to environment variable)
-#' @param freq Frequency conversion (for list of codes use
-#' get_moodys_codes(frequencies), or see the API user guide)
-#' @param trans Transformation code (for list of codes see API user guide)
-#' @param vintage Get list of available vintages using
-#' get_moodys_vintages(mnemonic)
-#' @import httr2
-#' @importFrom magrittr %>%
+#' Based on Moody's sample code:
+#' <https://github.com/moodysanalytics/databuffet-api-codesamples/blob/master/R/Single-Series.R>
 #'
-#' @return returns list from json. Use function convert_moodys to create
-#' a data frame
+#' @param mnemonics A single mnemonic or a character vector of mnemonics. More
+#'   than 25 are requested in batches.
+#' @param freq Frequency conversion code. See [get_moodys_codes()].
+#' @param trans Transformation code. See the API user guide.
+#' @param vintage Vintage to request. See [get_moodys_vintages()].
+#' @param accKey Moody's API access key. Defaults to the stored key, see
+#'   [moodys_key()].
+#' @param encKey Moody's API encryption key. Defaults to the stored key.
+#'
+#' @return An `httr2_response` for 25 or fewer mnemonics, or a list of
+#'   responses when batching. Pass either to [convert_moodys()].
 #' @export
 #'
 #' @examples
-#' jobs_forecast_vintage_202309 <- get_moodys_series("fet.iusa",
-#' vintage = "202309") %>%
-#'  convert_moodys(type = "xts")
-
-
-
-
-get_moodys_series <- function(mnemonics,
-                              freq = "0",
-                              trans = "0",
-                              vintage = NULL,
-                              accKey = Sys.getenv("MOODYS_ACC_KEY"),
-                              encKey = Sys.getenv("MOODYS_ENC_KEY")) {
-
-
-
-  if (length(mnemonics) > 25) {
-    # check for token in the environment
-
-
-    # break the mnemonics into groups of 25
-    m_chunks <- split(mnemonics, ceiling(seq_along(mnemonics) / 25))
-  }
-
-  create_req <- function(mnemonics,
-                         freq = NULL,
-                         trans = NULL,
-                         vintage,
-                         ...) {
-    # check for token in the environment
-    check_moodys_token()
-
-    params <- list(
+#' \dontrun{
+#' jobs_forecast_202309 <- get_moodys_series("fet.iusa", vintage = "202309") |>
+#'   convert_moodys()
+#' }
+get_moodys_series <- function(
+  mnemonics,
+  freq = "0",
+  trans = "0",
+  vintage = NULL,
+  accKey = moodys_key("acc"),
+  encKey = moodys_key("enc")
+) {
+  create_req <- function(mnemonics) {
+    .moodys_token_req(
+      "multi-series/",
       m = paste0(mnemonics, collapse = ";"),
       freq = freq,
       trans = trans,
       vintage = vintage,
-      ...
+      accKey = accKey,
+      encKey = encKey
     )
-
-    headers <- list(Accept = "application/json",
-                    Authorization = paste0("Bearer ", temporary_env$token))
-
-    req <- request("https://api.economy.com/data/v1/multi-series/") |>
-      req_headers(!!!headers) |>
-      req_url_query(!!!params)
-
-    return(req)
   }
 
-  if(length(mnemonics) > 25) {
+  # The API accepts at most 25 mnemonics per call.
+  if (length(mnemonics) > 25) {
+    chunks <- split(mnemonics, ceiling(seq_along(mnemonics) / 25))
 
-    req_lst <- m_chunks |>
-      map(~create_req(mnemonics = .x,
-                      freq,
-                      trans,
-                      vintage))
-
-    response <- req_lst |>
-      req_perform_sequential(progress = TRUE)
-
-
+    chunks |>
+      purrr::map(\(x) create_req(x)) |>
+      httr2::req_perform_sequential(progress = TRUE)
   } else {
-    req <- create_req(head(mnemonics,25),
-                      freq,
-                      trans,
-                      vintage)
-
-    response <- req_perform(req)
-
+    httr2::req_perform(create_req(mnemonics))
   }
-
-
-  return(response)
 }
 
-
-#' Convert Moody's Data Buffet series query to an object
+#' Convert a Moody's Data Buffet query to a data frame
 #'
-#' @param series Object from get_moodys_series()
-#' @param series_type Whether the series is a single or multi series query
+#' @param resp An `httr2_response`, or a list of responses, from
+#'   [get_moodys_series()].
 #'
-#' @return Returns a dataframe
+#' @return A tibble, one row per observation.
 #' @export
 #'
 #' @examples
-#' jobs_forecast_vintage_202309 <- get_moodys_series("fet.iusa",
-#' vintage = "202309") %>%
-#'  convert_moodys(type = "xts")
-
+#' \dontrun{
+#' jobs_forecast_202309 <- get_moodys_series("fet.iusa", vintage = "202309") |>
+#'   convert_moodys()
+#' }
 convert_moodys <- function(resp) {
   process_response <- function(response) {
     response |>
@@ -130,19 +88,11 @@ convert_moodys <- function(resp) {
       tidyr::unnest_wider("data")
   }
 
-  if(all(length(attributes(resp)) >0,
-            attributes(resp)$class == "httr2_response")) {
-    out <- process_response(resp)
+  if (inherits(resp, "httr2_response")) {
+    process_response(resp)
   } else {
-    out <- resp |>
+    resp |>
       httr2::resps_successes() |>
-      httr2::resps_data(\(resp) process_response(resp))
+      httr2::resps_data(\(x) process_response(x))
   }
-
-  return(out)
-
 }
-
-
-
-

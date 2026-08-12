@@ -1,35 +1,48 @@
-#' Call Moody's API
+#' Call the Moody's API
 #'
 #' @description
-#' Function to make a call based on the Moody's economy.com API.
+#' Makes a signed call against the Moody's economy.com API. This is the
+#' low-level entry point; most users want [get_moodys_series()],
+#' [search_moodys_series()], or [get_moodys_basket()].
 #'
 #' Based on the Moody's API documentation:
-#' https://www.economy.com/support/apis/getting-started
+#' <https://www.economy.com/support/apis/getting-started>
 #'
-#' @param apiCommand Moody's API command
-#' @param accKey Moody's API acccess key (defaults to environment variable if installed using set_moodys_api_key)
-#' @param encKey Moody's API encryption key (defaults to environment variable if installed using set_moodys_api_key)
-#' @param type GET or POST command to pass to API
+#' @param apiCommand Path below `https://api.economy.com/data/v1/`.
+#' @param accKey Moody's API access key. Defaults to the stored key, see
+#'   [moodys_key()].
+#' @param encKey Moody's API encryption key. Defaults to the stored key.
+#' @param type HTTP method, `"GET"` or `"POST"`.
 #'
-#' @return httr request object
+#' @return An `httr2_response`. Note that versions before 0.1.0 returned an
+#'   `httr` response; use [httr2::resp_body_json()] rather than
+#'   `httr::content()` to read it.
 #' @export
+#'
+#' @examples
+#' \dontrun{
+#' call_api_moodys("baskets/") |> httr2::resp_body_json()
+#' }
+call_api_moodys <- function(
+  apiCommand,
+  accKey = moodys_key("acc"),
+  encKey = moodys_key("enc"),
+  type = c("GET", "POST")
+) {
+  type <- match.arg(type)
 
-call_api_moodys <- function(apiCommand, accKey = Sys.getenv('MOODYS_ACC_KEY'), encKey = Sys.getenv("MOODYS_ENC_KEY"), type = "GET"){
-  url <- paste("https://api.economy.com/data/v1/", apiCommand, sep = "")
-  print(url)
-  timeStamp <- format(as.POSIXct(Sys.time()), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
-  hashMsg   <- paste(accKey, timeStamp, sep = "")
-  signature <- digest::hmac(encKey, hashMsg, "sha256")
+  .moodys_signed_req(apiCommand, accKey = accKey, encKey = encKey) |>
+    httr2::req_method(type) |>
+    httr2::req_perform()
+}
 
-  Sys.sleep(1)
-  if (type == "POST") {
-    req <- httr::POST(url, httr::add_headers("AccessKeyId" = accKey,
-                                             "Signature" = signature,
-                                             "TimeStamp" = timeStamp))
-  } else {
-    req <- httr::GET(url, httr::add_headers("AccessKeyId" = accKey,
-                                            "Signature" = signature,
-                                            "TimeStamp" = timeStamp))
-  }
-  return(req)
+#' Parse a Moody's API response as JSON
+#'
+#' @param resp An `httr2_response`.
+#'
+#' @return The parsed body, simplified by [jsonlite::fromJSON()].
+#' @keywords internal
+#' @noRd
+.moodys_json <- function(resp) {
+  jsonlite::fromJSON(httr2::resp_body_string(resp))
 }

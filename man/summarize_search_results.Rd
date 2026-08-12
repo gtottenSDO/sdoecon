@@ -2,16 +2,23 @@
 % Please edit documentation in R/search_moodys_series.R
 \name{summarize_search_results}
 \alias{summarize_search_results}
-\title{Get Search Result Summary}
+\title{Summarize Moody's search results}
 \usage{
 summarize_search_results(search_df)
 }
 \arguments{
-\item{search_df}{Data frame from convert_moodys_search()}
+\item{search_df}{A data frame from \code{\link[=convert_moodys_search]{convert_moodys_search()}}.}
 }
 \value{
-Prints summary of search results
+Invisibly, \code{search_df}. Called for the printed summary.
 }
 \description{
-Get Search Result Summary
+Summarize Moody's search results
+}
+\examples{
+\dontrun{
+search_moodys_series("unemployment rate") |>
+  convert_moodys_search() |>
+  summarize_search_results()
+}
 }

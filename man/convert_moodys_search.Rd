@@ -2,20 +2,24 @@
 % Please edit documentation in R/search_moodys_series.R
 \name{convert_moodys_search}
 \alias{convert_moodys_search}
-\title{Convert Moody's Search Results to Data Frame}
+\title{Convert Moody's search results to a data frame}
 \usage{
 convert_moodys_search(search_response)
 }
 \arguments{
-\item{search_response}{Object from search_moodys_series()}
+\item{search_response}{An \code{httr2_response} from \code{\link[=search_moodys_series]{search_moodys_series()}}.}
 }
 \value{
-Returns a dataframe with search results
+A tibble of search results. Total match count, start position and
+returned count are attached as the attributes \code{total_results},
+\code{start_position} and \code{returned_results}; see \code{\link[=summarize_search_results]{summarize_search_results()}}.
 }
 \description{
-Convert Moody's Search Results to Data Frame
+Convert Moody's search results to a data frame
 }
 \examples{
+\dontrun{
 unemployment_search <- search_moodys_series("unemployment rate")
 unemployment_df <- convert_moodys_search(unemployment_search)
+}
 }

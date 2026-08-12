@@ -1,222 +1,194 @@
-#' Search Moody's Data Buffet Series
+#' Search Moody's Data Buffet series
 #'
-#' This function searches Moody's Data Buffet Series using a search query.
-#' Access and Encryption Keys can be stored using set_moodys_api_key(),
-#' or passed through to the function directly. Use convert_moodys_search()
-#' to create a data frame object from the search results.
+#' @description
+#' Searches Moody's Data Buffet for series matching a query. Use
+#' [convert_moodys_search()] to turn the result into a data frame, or
+#' [search_moodys_series_all()] to page through every match.
 #'
-#' API documentation can be found at https://www.economy.com/products/tools/api#db
+#' API documentation: <https://www.economy.com/products/tools/api#db>
 #'
-#' @param query Search query string to find relevant series
-#' @param geo_rfa Geographic region filter (default: "IUSA" for United States)
-#' @param rel_id Relationship ID to filter results (default: "F1A0751C-5283-4EAC-9F5A-2F3114C9AF85")
-#' @param start Starting position for pagination (0-indexed)
-#' @param rows Number of rows to return (default: 25, max recommended: 100)
-#' @param sort Sort criteria (leave blank to sort by relevance score)
-#' @param accKey Access Key for Moody's API (defaults to environment variable)
-#' @param encKey Encryption Key for Moody's API (defaults to environment variable)
-#' @import httr2
-#' @importFrom magrittr %>%
+#' @param query Search query string.
+#' @param geo_rfa Geographic region filter, appended to the query as
+#'   `geo_rfa:<value>`. Defaults to `"IUSA"` (United States).
+#' @param ... Further filter clauses, combined into the query with `AND`.
+#' @param start Starting position for pagination, 0-indexed.
+#' @param rows Number of rows to return.
+#' @param sort Sort criteria. Leave `NULL` to sort by relevance score.
+#' @param accKey Moody's API access key. Defaults to the stored key, see
+#'   [moodys_key()].
+#' @param encKey Moody's API encryption key. Defaults to the stored key.
 #'
-#' @return returns list from json. Use function convert_moodys_search() to create
-#' a data frame
+#' @return An `httr2_response`. Pass it to [convert_moodys_search()].
 #' @export
 #'
 #' @examples
-#' # Search for unemployment data
+#' \dontrun{
 #' unemployment_search <- search_moodys_series("unemployment rate united states")
 #' unemployment_df <- convert_moodys_search(unemployment_search)
 #'
-#' # Search with pagination
+#' # With pagination
 #' gdp_search <- search_moodys_series("GDP", start = 0, rows = 50)
-
+#' }
 search_moodys_series <- function(
-  query = NULL,
+  query,
   geo_rfa = "IUSA",
   ...,
-  start = NULL,
-  rows = NULL,
+  start = 0,
+  rows = 25,
   sort = NULL,
-  accKey = Sys.getenv("MOODYS_ACC_KEY"),
-  encKey = Sys.getenv("MOODYS_ENC_KEY")
+  accKey = moodys_key("acc"),
+  encKey = moodys_key("enc")
 ) {
-  # Check for token in the environment
-  check_moodys_token()
-
-  # Validate inputs
-  if (missing(query) || is.null(query) || query == "") {
-    stop("Search query cannot be empty")
+  if (missing(query) || is.null(query) || !nzchar(query)) {
+    stop("Search query cannot be empty", call. = FALSE)
   }
 
-  if (rows > 100 || is.null(rows)) {
+  if (!is.null(rows) && rows > 100) {
     warning(
-      "Large row counts may result in slower response times. Consider using pagination."
+      "Large row counts may result in slower response times. ",
+      "Consider using pagination.",
+      call. = FALSE
     )
   }
 
-  # Build query parameters
   params <- list(
-    q = paste(
-      query,
-      paste0("geo_rfa:", geo_rfa),
-      ...,
-      sep = " AND "
-    ),
+    q = paste(query, paste0("geo_rfa:", geo_rfa), ..., sep = " AND "),
     start = start,
     rows = rows
   )
 
-  # Add sort parameter if provided
-  if (!is.null(sort) && sort != "") {
+  if (!is.null(sort) && nzchar(sort)) {
     params$sort <- sort
   }
 
-  # Set up headers
-  headers <- list(
-    Accept = "application/json",
-    Authorization = paste0("Bearer ", temporary_env$token)
-  )
-
-  # Create and execute request
-  req <- request("https://api.economy.com/data/v1/search") |>
-    req_headers(!!!headers) |>
-    req_url_query(!!!params)
-
-  response <- req_perform(req)
-
-  return(response)
+  .moodys_token_req("search", !!!params, accKey = accKey, encKey = encKey) |>
+    httr2::req_perform()
 }
 
-#' Convert Moody's Search Results to Data Frame
+#' Convert Moody's search results to a data frame
 #'
-#' @param search_response Object from search_moodys_series()
+#' @param search_response An `httr2_response` from [search_moodys_series()].
 #'
-#' @return Returns a dataframe with search results
+#' @return A tibble of search results. Total match count, start position and
+#'   returned count are attached as the attributes `total_results`,
+#'   `start_position` and `returned_results`; see [summarize_search_results()].
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' unemployment_search <- search_moodys_series("unemployment rate")
 #' unemployment_df <- convert_moodys_search(unemployment_search)
-
+#' }
 convert_moodys_search <- function(search_response) {
   if (!inherits(search_response, "httr2_response")) {
-    stop("Input must be an httr2_response object from search_moodys_series()")
+    stop(
+      "Input must be an httr2_response object from search_moodys_series()",
+      call. = FALSE
+    )
   }
 
-  # Parse the JSON response
-  response_data <- search_response |>
-    httr2::resp_body_json()
+  response_data <- httr2::resp_body_json(search_response)
 
-  # Check if there are results
-  if (
-    is.null(response_data$results) ||
-      response_data$count == 0
-  ) {
-    warning("No search results found")
+  if (is.null(response_data$results) || response_data$count == 0) {
+    warning("No search results found", call. = FALSE)
     return(tibble::tibble())
   }
 
-  # Extract search metadata
-  total_results <- response_data$count %||% 0
-  start_position <- response_data$start %||% 0
-
-  # Convert search results to data frame
   search_df <- response_data$results |>
     tibble::tibble() |>
     rlang::set_names("doc") |>
     tidyr::unnest_wider("doc")
 
-  # Add metadata as attributes
-  attr(search_df, "total_results") <- total_results
-  attr(search_df, "start_position") <- start_position
+  attr(search_df, "total_results") <- response_data$count %||% 0
+  attr(search_df, "start_position") <- response_data$start %||% 0
   attr(search_df, "returned_results") <- nrow(search_df)
 
-  return(search_df)
+  search_df
 }
 
-
-#' Get Search Result Summary
+#' Summarize Moody's search results
 #'
-#' @param search_df Data frame from convert_moodys_search()
+#' @param search_df A data frame from [convert_moodys_search()].
 #'
-#' @return Prints summary of search results
+#' @return Invisibly, `search_df`. Called for the printed summary.
 #' @export
-
+#'
+#' @examples
+#' \dontrun{
+#' search_moodys_series("unemployment rate") |>
+#'   convert_moodys_search() |>
+#'   summarize_search_results()
+#' }
 summarize_search_results <- function(search_df) {
   total <- attr(search_df, "total_results") %||% "Unknown"
   start <- attr(search_df, "start_position") %||% 0
   returned <- attr(search_df, "returned_results") %||% nrow(search_df)
 
-  cat("Search Results Summary:\n")
-  cat("  Total results found:", total, "\n")
-  cat("  Starting position:", start, "\n")
-  cat("  Results returned:", returned, "\n")
+  message("Search Results Summary:")
+  message("  Total results found: ", total)
+  message("  Starting position: ", start)
+  message("  Results returned: ", returned)
 
   if (ncol(search_df) > 0) {
-    cat("  Available columns:", paste(names(search_df), collapse = ", "), "\n")
+    message("  Available columns: ", paste(names(search_df), collapse = ", "))
   }
 
   invisible(search_df)
 }
 
-
-#' Search Moody's Series with Pagination Helper
+#' Search Moody's series across all result pages
 #'
-#' This function automatically handles pagination to retrieve all results
-#' for a search query. Use with caution for queries with many results.
+#' Repeatedly calls [search_moodys_series()] to retrieve up to `max_results`
+#' matches. Use with care for broad queries.
 #'
-#' @param query Search query string
-#' @param max_results Maximum number of results to retrieve (default: 500)
-#' @param rows_per_page Number of rows per API call (default: 100)
-#' @param sort Sort criteria
-#' @param accKey Access Key for Moody's API
-#' @param encKey Encryption Key for Moody's API
+#' @param query Search query string.
+#' @param max_results Maximum number of results to retrieve.
+#' @param rows_per_page Number of rows per API call.
+#' @param sort Sort criteria. Leave `NULL` to sort by relevance score.
+#' @inheritParams search_moodys_series
 #'
-#' @return Data frame with all search results
+#' @return A tibble of all retrieved search results, carrying the same
+#'   attributes as [convert_moodys_search()].
 #' @export
-
+#'
+#' @examples
+#' \dontrun{
+#' search_moodys_series_all("colorado employment", max_results = 200)
+#' }
 search_moodys_series_all <- function(
   query,
   max_results = 500,
   rows_per_page = 100,
   sort = NULL,
-  accKey = Sys.getenv("MOODYS_ACC_KEY"),
-  encKey = Sys.getenv("MOODYS_ENC_KEY")
+  accKey = moodys_key("acc"),
+  encKey = moodys_key("enc")
 ) {
-  # Initial search to get total count
-  initial_search <- search_moodys_series(
+  initial_df <- search_moodys_series(
     query = query,
     start = 0,
     rows = rows_per_page,
     sort = sort,
     accKey = accKey,
     encKey = encKey
-  )
+  ) |>
+    convert_moodys_search()
 
-  initial_df <- convert_moodys_search(initial_search)
-  total_available <- attr(initial_df, "total_results")
+  total_available <- attr(initial_df, "total_results") %||% 0
 
-  if (total_available == 0) {
-    return(initial_df)
-  }
-
-  # Calculate how many more results we need
   results_to_get <- min(max_results, total_available)
-
   if (results_to_get <= rows_per_page) {
     return(initial_df)
   }
 
-  # Calculate pagination
   remaining_results <- results_to_get - rows_per_page
   additional_calls <- ceiling(remaining_results / rows_per_page)
 
-  cat("Retrieving", results_to_get, "of", total_available, "total results...\n")
+  message("Retrieving ", results_to_get, " of ", total_available, " results...")
 
-  # Collect all results
-  all_results <- list(initial_df)
+  all_results <- vector("list", additional_calls + 1)
+  all_results[[1]] <- initial_df
 
-  for (i in 1:additional_calls) {
+  for (i in seq_len(additional_calls)) {
     start_pos <- i * rows_per_page
     rows_this_call <- min(
       rows_per_page,
@@ -227,37 +199,22 @@ search_moodys_series_all <- function(
       break
     }
 
-    cat(
-      "Fetching results",
-      start_pos + 1,
-      "to",
-      start_pos + rows_this_call,
-      "...\n"
-    )
-
-    search_response <- search_moodys_series(
+    all_results[[i + 1]] <- search_moodys_series(
       query = query,
       start = start_pos,
       rows = rows_this_call,
       sort = sort,
       accKey = accKey,
       encKey = encKey
-    )
-
-    search_df <- convert_moodys_search(search_response)
-    all_results[[i + 1]] <- search_df
-
-    # Small delay to be respectful to the API
-    Sys.sleep(0.1)
+    ) |>
+      convert_moodys_search()
   }
 
-  # Combine all results
   combined_df <- dplyr::bind_rows(all_results)
 
-  # Preserve metadata from the initial search
   attr(combined_df, "total_results") <- total_available
   attr(combined_df, "start_position") <- 0
   attr(combined_df, "returned_results") <- nrow(combined_df)
 
-  return(combined_df)
+  combined_df
 }

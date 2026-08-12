@@ -6,27 +6,38 @@
 \usage{
 get_moodys_basket(
   BASKET_NAME,
-  accKey = Sys.getenv("MOODYS_ACC_KEY"),
-  encKey = Sys.getenv("MOODYS_ENC_KEY")
+  accKey = moodys_key("acc"),
+  encKey = moodys_key("enc"),
+  max_wait = 600,
+  poll_interval = 10
 )
 }
 \arguments{
-\item{BASKET_NAME}{Name of basket to download}
+\item{BASKET_NAME}{Name of the basket to run.}
 
-\item{accKey}{Moody's API acccess key (defaults to environment variable if installed using set_moodys_api_key)}
+\item{accKey}{Moody's API access key. Defaults to the stored key, see
+\code{\link[=moodys_key]{moodys_key()}}.}
 
-\item{encKey}{Moody's API encryption key (defaults to environment variable if installed using set_moodys_api_key)}
+\item{encKey}{Moody's API encryption key. Defaults to the stored key.}
+
+\item{max_wait}{Maximum seconds to wait for the basket to finish processing
+before erroring. Baskets are run server-side and can take minutes.}
+
+\item{poll_interval}{Seconds between status checks.}
 }
 \value{
-Data frame with long format data
+A tibble of the basket contents, one row per series.
 }
 \description{
-Function to get Moody's data for a specific basket.
-Data is converted to long format and statewide and Denver Boulder MSA are aggregated.
+Runs a named Moody's basket, waits for it to finish processing, and returns
+the resulting CSV. Use \code{\link[=process_moodys]{process_moodys()}} to reshape the result to long
+format with geography labels.
 
-Function based on Moody's API documentation:
-https://www.economy.com/support/apis/getting-started
+Based on the Moody's API documentation:
+\url{https://www.economy.com/support/apis/getting-started}
 }
 \examples{
-moodys_colorado_forecast <- basket_call(BASKET_NAME = "colorado_sector_emp")
+\dontrun{
+moodys_colorado_forecast <- get_moodys_basket("colorado_sector_emp")
+}
 }

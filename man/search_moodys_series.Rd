@@ -2,54 +2,54 @@
 % Please edit documentation in R/search_moodys_series.R
 \name{search_moodys_series}
 \alias{search_moodys_series}
-\title{Search Moody's Data Buffet Series}
+\title{Search Moody's Data Buffet series}
 \usage{
 search_moodys_series(
-  query = NULL,
+  query,
   geo_rfa = "IUSA",
   ...,
-  start = NULL,
-  rows = NULL,
+  start = 0,
+  rows = 25,
   sort = NULL,
-  accKey = Sys.getenv("MOODYS_ACC_KEY"),
-  encKey = Sys.getenv("MOODYS_ENC_KEY")
+  accKey = moodys_key("acc"),
+  encKey = moodys_key("enc")
 )
 }
 \arguments{
-\item{query}{Search query string to find relevant series}
+\item{query}{Search query string.}
 
-\item{geo_rfa}{Geographic region filter (default: "IUSA" for United States)}
+\item{geo_rfa}{Geographic region filter, appended to the query as
+\verb{geo_rfa:<value>}. Defaults to \code{"IUSA"} (United States).}
 
-\item{start}{Starting position for pagination (0-indexed)}
+\item{...}{Further filter clauses, combined into the query with \code{AND}.}
 
-\item{rows}{Number of rows to return (default: 25, max recommended: 100)}
+\item{start}{Starting position for pagination, 0-indexed.}
 
-\item{sort}{Sort criteria (leave blank to sort by relevance score)}
+\item{rows}{Number of rows to return.}
 
-\item{accKey}{Access Key for Moody's API (defaults to environment variable)}
+\item{sort}{Sort criteria. Leave \code{NULL} to sort by relevance score.}
 
-\item{encKey}{Encryption Key for Moody's API (defaults to environment variable)}
+\item{accKey}{Moody's API access key. Defaults to the stored key, see
+\code{\link[=moodys_key]{moodys_key()}}.}
 
-\item{rel_id}{Relationship ID to filter results (default: "F1A0751C-5283-4EAC-9F5A-2F3114C9AF85")}
+\item{encKey}{Moody's API encryption key. Defaults to the stored key.}
 }
 \value{
-returns list from json. Use function convert_moodys_search() to create
-a data frame
+An \code{httr2_response}. Pass it to \code{\link[=convert_moodys_search]{convert_moodys_search()}}.
 }
 \description{
-This function searches Moody's Data Buffet Series using a search query.
-Access and Encryption Keys can be stored using set_moodys_api_key(),
-or passed through to the function directly. Use convert_moodys_search()
-to create a data frame object from the search results.
-}
-\details{
-API documentation can be found at https://www.economy.com/products/tools/api#db
+Searches Moody's Data Buffet for series matching a query. Use
+\code{\link[=convert_moodys_search]{convert_moodys_search()}} to turn the result into a data frame, or
+\code{\link[=search_moodys_series_all]{search_moodys_series_all()}} to page through every match.
+
+API documentation: \url{https://www.economy.com/products/tools/api#db}
 }
 \examples{
-# Search for unemployment data
+\dontrun{
 unemployment_search <- search_moodys_series("unemployment rate united states")
 unemployment_df <- convert_moodys_search(unemployment_search)
 
-# Search with pagination
+# With pagination
 gdp_search <- search_moodys_series("GDP", start = 0, rows = 50)
+}
 }

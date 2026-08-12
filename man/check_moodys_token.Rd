@@ -2,16 +2,25 @@
 % Please edit documentation in R/moodys_authenticate.R
 \name{check_moodys_token}
 \alias{check_moodys_token}
-\title{Check Moody's Token}
+\title{Return a valid Moody's bearer token}
 \usage{
-check_moodys_token(
-  accKey = Sys.getenv("MOODYS_ACC_KEY"),
-  encKey = Sys.getenv("MOODYS_ENC_KEY")
-)
+check_moodys_token(accKey = moodys_key("acc"), encKey = moodys_key("enc"))
 }
 \arguments{
-\item{encKey}{}
+\item{accKey}{Moody's API access key. Defaults to the stored key, see
+\code{\link[=moodys_key]{moodys_key()}}.}
+
+\item{encKey}{Moody's API encryption key. Defaults to the stored key.}
+}
+\value{
+The bearer token, as a length-1 character vector.
 }
 \description{
-Check Moody's Token
+Returns the cached token if it has not expired, otherwise requests a fresh
+one via \code{\link[=get_moodys_token]{get_moodys_token()}}.
+}
+\examples{
+\dontrun{
+check_moodys_token()
+}
 }
