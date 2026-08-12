@@ -56,8 +56,9 @@ deprecated.
   defaults. `rows > 100 || is.null(rows)` evaluated `NULL > 100` first, which
   produced `logical(0)` and aborted with "argument is of length zero".
 * `get_moodys_basket()` wrote a `basket.data` file into the user's working
-  directory and read it back with an undeclared `readr` dependency. It now uses
-  a temporary file. (The stray `basket.data` this produced has been removed
+  directory and read it back with an undeclared `readr` dependency. It now
+  parses the response body in memory and writes nothing to disk, and `readr` is
+  declared in `Imports`. (The stray `basket.data` this produced has been removed
   from the repository.)
 * `get_moodys_basket()` polled for order completion in an unbounded loop; a
   stuck order hung the session. Added `max_wait` (default 600s).
