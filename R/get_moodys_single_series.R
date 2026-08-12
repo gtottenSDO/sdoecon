@@ -45,7 +45,9 @@ get_moodys_series <- function(
       m = paste0(mnemonics, collapse = ";"),
       freq = freq,
       trans = trans,
-      vintage = vintage
+      vintage = vintage,
+      accKey = accKey,
+      encKey = encKey
     )
   }
 

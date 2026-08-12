@@ -16,7 +16,8 @@ moodys_keyring_service <- "moodys"
 #'   requiring an R restart), or `"session"` (environment variables for the
 #'   current session only).
 #' @param permanent Deprecated. `permanent = FALSE` is equivalent to
-#'   `backend = "session"`.
+#'   `backend = "session"`, and `permanent = TRUE` to `backend = "renviron"`,
+#'   which is what it used to do.
 #' @param renviron_path Path to the `.Renviron` file to write when
 #'   `backend = "renviron"`. Defaults to the one in your home directory.
 #'   Exposed mainly so this can be tested without touching a real `.Renviron`:
@@ -44,9 +45,10 @@ set_moodys_api_key <- function(
       "`permanent` is deprecated; use `backend` instead.",
       call. = FALSE
     )
-    if (isFALSE(permanent)) {
-      backend <- "session"
-    }
+    # Map both values: `permanent = TRUE` was the old default and meant
+    # ".Renviron". Letting it fall through to `keyring` would write a key that
+    # moodys_key() then prefers over the .Renviron the caller expected to edit.
+    backend <- if (isFALSE(permanent)) "session" else "renviron"
   }
 
   switch(

@@ -23,7 +23,8 @@ requiring an R restart), or \code{"session"} (environment variables for the
 current session only).}
 
 \item{permanent}{Deprecated. \code{permanent = FALSE} is equivalent to
-\code{backend = "session"}.}
+\code{backend = "session"}, and \code{permanent = TRUE} to \code{backend = "renviron"},
+which is what it used to do.}
 
 \item{renviron_path}{Path to the \code{.Renviron} file to write when
 \code{backend = "renviron"}. Defaults to the one in your home directory.

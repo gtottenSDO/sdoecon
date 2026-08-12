@@ -80,6 +80,9 @@ get_moodys_token <- function(
 
   .moodys_env$token <- data$access_token
   .moodys_env$token_expires <- Sys.time() + data$expires_in
+  # Record whose credentials minted this token, so check_moodys_token() can
+  # tell a cache hit from a different account asking for one.
+  .moodys_env$key_id <- .moodys_key_id(accKey, encKey)
 
   invisible(.moodys_env$token)
 }
@@ -103,6 +106,7 @@ check_moodys_token <- function(
   encKey = moodys_key("enc")
 ) {
   valid <- exists("token_expires", envir = .moodys_env, inherits = FALSE) &&
+    identical(.moodys_env$key_id, .moodys_key_id(accKey, encKey)) &&
     .moodys_env$token_expires > Sys.time()
 
   if (!valid) {
@@ -112,16 +116,34 @@ check_moodys_token <- function(
   .moodys_env$token
 }
 
+#' Identify a pair of Moody's keys without retaining them
+#'
+#' @param accKey,encKey Moody's API keys.
+#'
+#' @return A hash of the key pair, used to scope the cached bearer token.
+#' @keywords internal
+#' @noRd
+.moodys_key_id <- function(accKey, encKey) {
+  digest::digest(list(accKey, encKey))
+}
+
 #' Build a bearer-token Moody's request
 #'
 #' @param path Path below `https://api.economy.com/data/v1/`.
 #' @param ... Query parameters appended to the URL.
+#' @param accKey,encKey Moody's API keys used to mint the bearer token. Named
+#'   after `...`, so callers must pass them by name.
 #'
 #' @return An `httr2_request`.
 #' @keywords internal
 #' @noRd
-.moodys_token_req <- function(path, ...) {
-  token <- check_moodys_token()
+.moodys_token_req <- function(
+  path,
+  ...,
+  accKey = moodys_key("acc"),
+  encKey = moodys_key("enc")
+) {
+  token <- check_moodys_token(accKey, encKey)
 
   req <- httr2::request(paste0(moodys_base_url, path)) |>
     httr2::req_headers(

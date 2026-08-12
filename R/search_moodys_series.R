@@ -61,7 +61,7 @@ search_moodys_series <- function(
     params$sort <- sort
   }
 
-  .moodys_token_req("search", !!!params) |>
+  .moodys_token_req("search", !!!params, accKey = accKey, encKey = encKey) |>
     httr2::req_perform()
 }
 

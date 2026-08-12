@@ -60,8 +60,14 @@ process_moodys <- function(df) {
     dplyr::filter(.data$fips_long == "00") |>
     dplyr::mutate(geo_type = "national")
 
+  # geography_xwalk() carries a statewide row ("08000"). Left in, a basket that
+  # includes Colorado's own series has that series labeled as a county and then
+  # added to the statewide total built by summing the counties below, so the
+  # statewide figure comes out at roughly twice the truth.
+  county_fips_long <- setdiff(geo_xwalk$fips_long, "08000")
+
   counties <- moodys_long |>
-    dplyr::filter(.data$fips_long %in% .env$geo_xwalk$fips_long) |>
+    dplyr::filter(.data$fips_long %in% .env$county_fips_long) |>
     dplyr::mutate(geo_type = "county")
 
   statewide <- counties |>

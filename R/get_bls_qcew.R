@@ -53,7 +53,10 @@ get_bls_qcew <- function(
     )
 
     if (is.null(county)) {
-      county <- geography_xwalk()$county_fips
+      # Drop the statewide row ("000"): keeping it would admit the Colorado
+      # aggregate (area_fips "08000") alongside the county records, so summing
+      # the result would count the state twice.
+      county <- setdiff(geography_xwalk()$county_fips, "000")
     }
 
     tf <- tempfile(fileext = ".zip")
