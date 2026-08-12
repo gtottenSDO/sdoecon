@@ -2,30 +2,40 @@
 % Please edit documentation in R/call_api_moodys.R
 \name{call_api_moodys}
 \alias{call_api_moodys}
-\title{Call Moody's API}
+\title{Call the Moody's API}
 \usage{
 call_api_moodys(
   apiCommand,
-  accKey = Sys.getenv("MOODYS_ACC_KEY"),
-  encKey = Sys.getenv("MOODYS_ENC_KEY"),
-  type = "GET"
+  accKey = moodys_key("acc"),
+  encKey = moodys_key("enc"),
+  type = c("GET", "POST")
 )
 }
 \arguments{
-\item{apiCommand}{Moody's API command}
+\item{apiCommand}{Path below \verb{https://api.economy.com/data/v1/}.}
 
-\item{accKey}{Moody's API acccess key (defaults to environment variable if installed using set_moodys_api_key)}
+\item{accKey}{Moody's API access key. Defaults to the stored key, see
+\code{\link[=moodys_key]{moodys_key()}}.}
 
-\item{encKey}{Moody's API encryption key (defaults to environment variable if installed using set_moodys_api_key)}
+\item{encKey}{Moody's API encryption key. Defaults to the stored key.}
 
-\item{type}{GET or POST command to pass to API}
+\item{type}{HTTP method, \code{"GET"} or \code{"POST"}.}
 }
 \value{
-httr request object
+An \code{httr2_response}. Note that versions before 0.1.0 returned an
+\code{httr} response; use \code{\link[httr2:resp_body_json]{httr2::resp_body_json()}} rather than
+\code{httr::content()} to read it.
 }
 \description{
-Function to make a call based on the Moody's economy.com API.
+Makes a signed call against the Moody's economy.com API. This is the
+low-level entry point; most users want \code{\link[=get_moodys_series]{get_moodys_series()}},
+\code{\link[=search_moodys_series]{search_moodys_series()}}, or \code{\link[=get_moodys_basket]{get_moodys_basket()}}.
 
 Based on the Moody's API documentation:
-https://www.economy.com/support/apis/getting-started
+\url{https://www.economy.com/support/apis/getting-started}
+}
+\examples{
+\dontrun{
+call_api_moodys("baskets/") |> httr2::resp_body_json()
+}
 }

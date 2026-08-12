@@ -2,52 +2,52 @@
 % Please edit documentation in R/get_moodys_single_series.R
 \name{get_moodys_series}
 \alias{get_moodys_series}
-\title{Get Moody's Data Buffet Series}
+\title{Get Moody's Data Buffet series}
 \usage{
 get_moodys_series(
   mnemonics,
   freq = "0",
   trans = "0",
   vintage = NULL,
-  accKey = Sys.getenv("MOODYS_ACC_KEY"),
-  encKey = Sys.getenv("MOODYS_ENC_KEY")
+  accKey = moodys_key("acc"),
+  encKey = moodys_key("enc")
 )
 }
 \arguments{
-\item{mnemonics}{Either a single mnemonic or list of mnemonics (less than 25)
-to pass to the Moody's API}
+\item{mnemonics}{A single mnemonic or a character vector of mnemonics. More
+than 25 are requested in batches.}
 
-\item{freq}{Frequency conversion (for list of codes use
-get_moodys_codes(frequencies), or see the API user guide)}
+\item{freq}{Frequency conversion code. See \code{\link[=get_moodys_codes]{get_moodys_codes()}}.}
 
-\item{trans}{Transformation code (for list of codes see API user guide)}
+\item{trans}{Transformation code. See the API user guide.}
 
-\item{vintage}{Get list of available vintages using
-get_moodys_vintages(mnemonic)}
+\item{vintage}{Vintage to request. See \code{\link[=get_moodys_vintages]{get_moodys_vintages()}}.}
 
-\item{accKey}{Access Key for Moody's API (defaults to environment variable)}
+\item{accKey}{Moody's API access key. Defaults to the stored key, see
+\code{\link[=moodys_key]{moodys_key()}}.}
 
-\item{encKey}{Encryption Key for Moody's API (defaults to environment variable)}
+\item{encKey}{Moody's API encryption key. Defaults to the stored key.}
 }
 \value{
-returns list from json. Use function convert_moodys to create
-a data frame
+An \code{httr2_response} for 25 or fewer mnemonics, or a list of
+responses when batching. Pass either to \code{\link[=convert_moodys]{convert_moodys()}}.
 }
 \description{
-This function retrieves Moody's Data Buffet Series using Mnemonic Code
-(or set of up to 25 Mnemonic Codes). Access and Encryption Keys can be stored
-using set_moodys_api_key(), or passed through to the function directly.
-Frequency, Transformation Code, and Vintage arguments are optional. Use
-convert_moodys() to create an xts or data frame object.
-}
-\details{
-API documentation can be found at https://www.economy.com/products/tools/api#db
+Retrieves Moody's Data Buffet series by mnemonic. Requests are automatically
+split into chunks of 25, the API's per-call limit. Use \code{\link[=convert_moodys]{convert_moodys()}} to
+turn the result into a data frame.
 
-Script based off of Moody's sample code available at:
-https://github.com/moodysanalytics/databuffet-api-codesamples/blob/master/R/Single-Series.R
+Access and encryption keys can be stored with \code{\link[=set_moodys_api_key]{set_moodys_api_key()}} or
+passed directly.
+
+API documentation: \url{https://www.economy.com/products/tools/api#db}
+
+Based on Moody's sample code:
+\url{https://github.com/moodysanalytics/databuffet-api-codesamples/blob/master/R/Single-Series.R}
 }
 \examples{
-jobs_forecast_vintage_202309 <- get_moodys_series("fet.iusa",
-vintage = "202309") \%>\%
- convert_moodys(type = "xts")
+\dontrun{
+jobs_forecast_202309 <- get_moodys_series("fet.iusa", vintage = "202309") |>
+  convert_moodys()
+}
 }

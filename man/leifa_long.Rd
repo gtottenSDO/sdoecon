@@ -5,28 +5,26 @@
 \alias{leifa_long}
 \title{Leifa Jobs}
 \format{
-A data frame with 396396 rows and 7 variables:
+A data frame with 396,396 rows and 7 variables:
 \describe{
-\item{fips_long}{County FIPS codes converted to 5 digits}
-\item{county_fips}{3 digit FIPS code}
+\item{bea_fips}{County FIPS code, 5 digits, on the BEA basis}
+\item{county_fips}{County FIPS code, 3 digits}
 \item{area}{Area name}
 \item{gcode}{SDO industry code}
-\item{leifa_group}{Grouping to describe type of worker. Either
-"WS" = Wage and Salary,
-"Prop = Sole Propreitor,
-"Jobs" = All workers (i.e., WS + Prop)}
-\item{year}{Year applicable to estimate}
-\item{total}{value applicable to estimate}
+\item{leifa_group}{Type of worker: \code{"WS"} (wage and salary),
+\code{"Prop"} (sole proprietor), or \code{"Jobs"} (all workers, WS + Prop)}
+\item{year}{Year the estimate applies to}
+\item{total}{Estimated value}
 }
 }
 \source{
-Colorado State Demography Office Crosswalk
+Colorado State Demography Office
 }
 \usage{
 leifa_long
 }
 \description{
-Historical Leifa data produced by the Colorado State Demography Office,
-in Long Format
+Historical Leifa jobs data produced by the Colorado State Demography
+Office, in long format.
 }
 \keyword{datasets}

@@ -4,9 +4,9 @@
 \name{sdoecon-package}
 \alias{sdoecon}
 \alias{sdoecon-package}
-\title{sdoecon: Package for loading SDO jobs data}
+\title{sdoecon: Colorado State Demography Office Economic Data Tools}
 \description{
-What the package does (one paragraph).
+Tools used by the Colorado State Demography Office to assemble economic and jobs data. Provides wrappers for the Moody's Analytics Data Buffet API, a downloader for the Bureau of Labor Statistics Quarterly Census of Employment and Wages (QCEW), and accessors for the office's economic crosswalks. Crosswalks are served from the SDO Postgres database via the 'sdotools' package rather than bundled with this package.
 }
 \seealso{
 Useful links:
@@ -18,6 +18,11 @@ Useful links:
 }
 \author{
 \strong{Maintainer}: Greg Totten \email{greg.totten@state.co.us}
+
+Authors:
+\itemize{
+  \item Greg Totten \email{greg.totten@state.co.us}
+}
 
 }
 \keyword{internal}

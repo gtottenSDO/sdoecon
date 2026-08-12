@@ -2,16 +2,25 @@
 % Please edit documentation in R/process_moodys.R
 \name{process_moodys}
 \alias{process_moodys}
-\title{Process Moodys Data}
+\title{Process Moody's basket data}
 \usage{
 process_moodys(df)
 }
 \arguments{
-\item{df}{Data frame of Moody's data}
+\item{df}{A data frame from \code{\link[=get_moodys_basket]{get_moodys_basket()}}.}
 }
 \value{
-Data frame of Moody's data
+A tibble with one row per series, geography and date, containing a
+\code{geo_type} column with values \code{"national"}, \code{"statewide"},
+\code{"denver_boulder_msa"} and \code{"county"}.
 }
 \description{
-Process Moody's data into long data frame. Calculate State and Denver Boulder MSA totals. Label county, state, msa and national and combine into single data frame.
+Reshapes a Moody's basket into a long data frame, converts values to
+counts (the API reports thousands), and appends statewide and Denver-Boulder
+MSA aggregates alongside the county rows, each labeled by \code{geo_type}.
+}
+\examples{
+\dontrun{
+get_moodys_basket("colorado_sector_emp") |> process_moodys()
+}
 }

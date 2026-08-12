@@ -2,43 +2,44 @@
 % Please edit documentation in R/get_bls_qcew.R
 \name{get_bls_qcew}
 \alias{get_bls_qcew}
-\title{Function to get BLS data from the BLS
-Quarterly Census of Employment and Wages (QCEW)}
+\title{Get BLS Quarterly Census of Employment and Wages (QCEW) data}
 \usage{
 get_bls_qcew(
   year = 2022,
   freq = "a",
-  call_type = "zip",
+  call_type = c("zip", "api"),
   state = "08",
   county = NULL
 )
 }
 \arguments{
-\item{year}{Year to download}
+\item{year}{Year to download.}
 
-\item{freq}{Frequency of data to download, must be either "q" (quarterly) or "a" (annual) when downloading zip files, or be the quarter number (1-4) or "a" (annual) when using the api call}
+\item{freq}{Frequency. For \code{call_type = "zip"}, either \code{"q"} (quarterly) or
+\code{"a"} (annual). For \code{call_type = "api"}, a quarter number (1-4) or \code{"a"}.}
 
-\item{call_type}{Either "zip" or "api"}
+\item{call_type}{Either \code{"zip"} or \code{"api"}.}
 
-\item{state}{State FIPS code for calling API or filtering downloaded
-zip files}
+\item{state}{State FIPS code.}
 
-\item{county}{County FIPS code for calling API or filtering downloaded
-zip files}
+\item{county}{County FIPS code(s). Defaults to every Colorado county in
+\code{\link[=geography_xwalk]{geography_xwalk()}} for \code{call_type = "zip"}; required, and a single value,
+for \code{call_type = "api"}.}
 }
 \value{
-A data frame with the requested data
+A tibble of the requested data, all columns read as character.
 }
 \description{
-Description of the data:
-https://www.bls.gov/cew/data-overview.htm
-Description of downloadable zip files:
-https://www.bls.gov/cew/downloadable-data-files.htm
-}
-\details{
-Description of api:
-https://www.bls.gov/cew/additional-resources/open-data/home.htm
+Downloads QCEW data either as a bulk single-file zip (all areas for a year,
+filtered locally) or through the open-data API (one area at a time, limited
+to roughly the past five years).
+
+Data overview: \url{https://www.bls.gov/cew/data-overview.htm};
+downloadable files: \url{https://www.bls.gov/cew/downloadable-data-files.htm};
+API: \url{https://www.bls.gov/cew/additional-resources/open-data/home.htm}
 }
 \examples{
+\dontrun{
 qcew_2020_all <- get_bls_qcew(year = 2020, freq = "q", call_type = "zip")
+}
 }

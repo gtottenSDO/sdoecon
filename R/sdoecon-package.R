@@ -2,6 +2,6 @@
 "_PACKAGE"
 
 ## usethis namespace: start
-#' @importFrom vroom vroom
+#' @importFrom rlang .data .env %||%
 ## usethis namespace: end
 NULL

@@ -2,16 +2,26 @@
 % Please edit documentation in R/moodys_authenticate.R
 \name{get_moodys_token}
 \alias{get_moodys_token}
-\title{Authenticate Moody's API for token}
+\title{Authenticate against the Moody's API for a bearer token}
 \usage{
-get_moodys_token(
-  accKey = Sys.getenv("MOODYS_ACC_KEY"),
-  encKey = Sys.getenv("MOODYS_ENC_KEY")
-)
+get_moodys_token(accKey = moodys_key("acc"), encKey = moodys_key("enc"))
+}
+\arguments{
+\item{accKey}{Moody's API access key. Defaults to the stored key, see
+\code{\link[=moodys_key]{moodys_key()}}.}
+
+\item{encKey}{Moody's API encryption key. Defaults to the stored key.}
 }
 \value{
-Stores token and token expiration time in temporary environment variable
+Invisibly, the access token.
 }
 \description{
-Stores token and token expiration time in temporary environment variable
+Requests an OAuth2 token and stores it, with its expiry, in an internal
+session environment. Called automatically by \code{\link[=check_moodys_token]{check_moodys_token()}}; you
+rarely need to call it yourself.
+}
+\examples{
+\dontrun{
+get_moodys_token()
+}
 }

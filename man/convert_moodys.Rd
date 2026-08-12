@@ -2,23 +2,23 @@
 % Please edit documentation in R/get_moodys_single_series.R
 \name{convert_moodys}
 \alias{convert_moodys}
-\title{Convert Moody's Data Buffet series query to an object}
+\title{Convert a Moody's Data Buffet query to a data frame}
 \usage{
 convert_moodys(resp)
 }
 \arguments{
-\item{series}{Object from get_moodys_series()}
-
-\item{series_type}{Whether the series is a single or multi series query}
+\item{resp}{An \code{httr2_response}, or a list of responses, from
+\code{\link[=get_moodys_series]{get_moodys_series()}}.}
 }
 \value{
-Returns a dataframe
+A tibble, one row per observation.
 }
 \description{
-Convert Moody's Data Buffet series query to an object
+Convert a Moody's Data Buffet query to a data frame
 }
 \examples{
-jobs_forecast_vintage_202309 <- get_moodys_series("fet.iusa",
-vintage = "202309") \%>\%
- convert_moodys(type = "xts")
+\dontrun{
+jobs_forecast_202309 <- get_moodys_series("fet.iusa", vintage = "202309") |>
+  convert_moodys()
+}
 }

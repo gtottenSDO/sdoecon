@@ -2,17 +2,49 @@
 % Please edit documentation in R/set_moodys_api_key.R
 \name{set_moodys_api_key}
 \alias{set_moodys_api_key}
-\title{Install Moodys API Keys}
+\title{Store Moody's API keys}
 \usage{
-set_moodys_api_key(accKey, encKey, permanent = TRUE)
+set_moodys_api_key(
+  accKey,
+  encKey,
+  backend = c("keyring", "renviron", "session"),
+  permanent = NULL,
+  renviron_path = file.path(path.expand("~"), ".Renviron")
+)
 }
 \arguments{
-\item{accKey}{Moodys API Access Key}
+\item{accKey}{Moody's API access key.}
 
-\item{encKey}{Moodys API Encryption Key}
+\item{encKey}{Moody's API encryption key.}
 
-\item{permanent}{Permanently write keys to user environment}
+\item{backend}{Where to store the keys. One of \code{"keyring"} (the system
+credential store, recommended), \code{"renviron"} (appended to \verb{~/.Renviron},
+requiring an R restart), or \code{"session"} (environment variables for the
+current session only).}
+
+\item{permanent}{Deprecated. \code{permanent = FALSE} is equivalent to
+\code{backend = "session"}.}
+
+\item{renviron_path}{Path to the \code{.Renviron} file to write when
+\code{backend = "renviron"}. Defaults to the one in your home directory.
+Exposed mainly so this can be tested without touching a real \code{.Renviron}:
+note that R resolves \code{~} once at startup, so overriding the \code{HOME}
+environment variable does \emph{not} redirect the default.}
+}
+\value{
+Invisibly, the backend used.
 }
 \description{
-Install Moodys API Keys
+Get your keys at \url{https://www.economy.com/myeconomy/api-key-info}.
+}
+\details{
+The default backend is the system credential store, matching the
+\code{sdo_db} pattern used by \code{sdotools}. Keys written to \code{.Renviron} by earlier
+versions of this package continue to work -- see \code{\link[=moodys_key]{moodys_key()}} for the
+resolution order.
+}
+\examples{
+\dontrun{
+set_moodys_api_key("my-access-key", "my-encryption-key")
+}
 }

@@ -1,62 +1,55 @@
-#' Lookup Available Vintages for a Moodys Mnemonic
+#' Look up available vintages for a Moody's mnemonic
 #'
-#' @param mnemonic Mnemonic to lookup
-#' @param accKey Access Key for Moody's API (defaults to environment variable)
-#' @param encKey Encryption Key for Moody's API (defaults to environment variable)
+#' @param mnemonic Mnemonic to look up.
+#' @param accKey Moody's API access key. Defaults to the stored key, see
+#'   [moodys_key()].
+#' @param encKey Moody's API encryption key. Defaults to the stored key.
 #'
-#' @return Data frame of available vintages
+#' @return A data frame of available vintages.
 #' @export
-
-
-get_moodys_vintages <- function(mnemonic,
-                                accKey = Sys.getenv("MOODYS_ACC_KEY"),
-                                encKey = Sys.getenv("MOODYS_ENC_KEY")){
-  url <- paste0("https://api.economy.com/data/v1/vintages?m=",
-                utils::URLencode(mnemonic))
-
-  timeStamp <- format(as.POSIXct(Sys.time()), "%Y-%m-%dT%H:%M:%SZ", tz="UTC")
-  hashMsg   <- paste(accKey, timeStamp, sep="")
-  signature <- digest::hmac(encKey, hashMsg, "sha256")
-
-  Sys.sleep(1)
-  req <- httr::GET(url, httr::add_headers("AccessKeyId" = accKey,
-                                          "Signature" = signature,
-                                          "TimeStamp" = timeStamp))
-
-  vintages <- jsonlite::fromJSON(httr::content(req, as="text"))
-
-  return(vintages)
+#'
+#' @examples
+#' \dontrun{
+#' get_moodys_vintages("fet.iusa")
+#' }
+get_moodys_vintages <- function(
+  mnemonic,
+  accKey = moodys_key("acc"),
+  encKey = moodys_key("enc")
+) {
+  .moodys_signed_req(
+    "vintages",
+    accKey = accKey,
+    encKey = encKey,
+    m = mnemonic
+  ) |>
+    httr2::req_perform() |>
+    .moodys_json()
 }
 
-#' Table of API Codes
+#' Table of Moody's API codes
 #'
-#' @param codetype Either "filetypes" or "frequencies" (filetypes are only for baskets)
-#' @param accKey Access Key for Moody's API (defaults to environment variable)
-#' @param encKey Encryption Key for Moody's API (defaults to environment variable)
+#' @param codetype Either `"filetypes"` (basket file types) or
+#'   `"frequencies"` (frequency conversion codes).
+#' @inheritParams get_moodys_vintages
 #'
-#' @return Data frame of available codes
+#' @return A data frame of available codes.
 #' @export
+#'
+#' @examples
+#' \dontrun{
+#' get_moodys_codes("frequencies")
+#' }
+get_moodys_codes <- function(
+  codetype = c("filetypes", "frequencies"),
+  accKey = moodys_key("acc"),
+  encKey = moodys_key("enc")
+) {
+  codetype <- match.arg(codetype)
 
+  params <- if (codetype == "filetypes") list(type = "baskets") else list()
 
-get_moodys_codes <- function(codetype = c("filetypes",
-                                          "frequencies"),
-                             accKey = Sys.getenv("MOODYS_ACC_KEY"),
-                             encKey = Sys.getenv("MOODYS_ENC_KEY")){
-
-  url <- paste0("https://api.economy.com/data/v1/",
-                codetype,
-                ifelse(codetype == "filetypes","?type=baskets",""))
-
-  timeStamp <- format(as.POSIXct(Sys.time()), "%Y-%m-%dT%H:%M:%SZ", tz="UTC")
-  hashMsg   <- paste(accKey, timeStamp, sep="")
-  signature <- digest::hmac(encKey, hashMsg, "sha256")
-
-  Sys.sleep(1)
-  req <- httr::GET(url, httr::add_headers("AccessKeyId" = accKey,
-                                          "Signature" = signature,
-                                          "TimeStamp" = timeStamp))
-
-  codes <- jsonlite::fromJSON(httr::content(req, as="text"))
-
-  return(codes)
+  .moodys_signed_req(codetype, accKey = accKey, encKey = encKey, !!!params) |>
+    httr2::req_perform() |>
+    .moodys_json()
 }
