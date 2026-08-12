@@ -1,7 +1,8 @@
 # sdoecon 0.1.0
 
 First release after a full review and cleanup. This version contains breaking
-changes; read the first two sections before upgrading.
+changes and one change to published output; read the first three sections
+before upgrading.
 
 ## Breaking: crosswalks are now functions, not datasets
 
@@ -41,6 +42,20 @@ The Moody's functions were split across two HTTP stacks. All of them are now on
 `get_moodys_vintages()` and `get_moodys_codes()` still return parsed data
 frames, so their contracts are unaffected.
 
+## Changed output: statewide aggregates in `process_moodys()`
+
+`process_moodys()` builds its `"statewide"` rows by summing everything it has
+labeled `"county"`, and it labeled counties by matching against all of
+`geography_xwalk()$fips_long` -- which carries a statewide row, `08000`. A
+basket that included Colorado's own series therefore had that series counted as
+a county *and* added to the sum of the counties, so the reported statewide
+figure came out at roughly twice the truth.
+
+`08000` is now excluded from the county match. **Statewide values will differ
+from prior vintages for any basket that carried the state series**; the new
+figures are the sum of the counties alone. County and Denver-Boulder rows are
+unaffected.
+
 ## API keys
 
 `set_moodys_api_key()` now stores keys in the system credential store by
@@ -48,10 +63,30 @@ default, matching the `sdo_db` pattern in `sdotools`. Keys previously written
 to `.Renviron` continue to work -- `moodys_key()` checks the credential store
 first, then `MOODYS_ACC_KEY` / `MOODYS_ENC_KEY`. Use
 `backend = "renviron"` to keep the old behavior. The `permanent` argument is
-deprecated.
+deprecated: `permanent = TRUE` maps to `backend = "renviron"`, which is what it
+used to do, and `permanent = FALSE` to `backend = "session"`.
 
 ## Bug fixes
 
+* `get_moodys_series()`, `search_moodys_series()` and
+  `search_moodys_series_all()` ignored their own `accKey` / `encKey` arguments.
+  The internal request builder minted the bearer token from the stored keys
+  regardless, so passing keys explicitly did nothing -- and with no key stored,
+  a call supplying valid keys still failed with "No Moody's acc key found". The
+  cached token is now scoped to the credentials that minted it, so a call
+  naming a second account no longer reuses the first account's token.
+* `get_bls_qcew()` defaulted `county` to every `county_fips` in
+  `geography_xwalk()`, including the statewide `"000"` entry, so the zip branch
+  returned the Colorado aggregate (`area_fips` `"08000"`) alongside the county
+  records and summing the result double-counted the state. The default is now
+  counties only.
+* `set_moodys_api_key(permanent = TRUE)` fell through to the credential store
+  rather than `.Renviron`. Because `moodys_key()` prefers the credential store,
+  that silently shadowed the `.Renviron` the caller expected to edit.
+* `Imports` declared bare `httr2` and `readr`. `req_throttle(capacity =,
+  fill_time_s =)` requires httr2 >= 1.1.0 and `read_csv(I(body))` requires
+  readr >= 2.0.0; on older versions every signed Moody's call failed with an
+  "unused arguments" error. Both now carry version floors.
 * `search_moodys_series()` could not be called with its own documented
   defaults. `rows > 100 || is.null(rows)` evaluated `NULL > 100` first, which
   produced `logical(0)` and aborted with "argument is of length zero".
